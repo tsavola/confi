@@ -4,7 +4,7 @@
 
 /*
 
-Package config is an ergonomic configuration parsing toolkit.  The schema is
+Package confi is an ergonomic configuration parsing toolkit.  The schema is
 declared using a struct type, and values can be read from TOML files or set via
 command-line flags.
 
@@ -31,9 +31,9 @@ Short example:
 
 	c := &myConfig{}
 
-	flag.Usage = config.FlagUsage(c)
-	flag.Var(config.FileReader(c), "f", "read config from TOML files")
-	flag.Var(config.Assigner(c), "c", "set config keys (path.to.key=value)")
+	flag.Usage = confi.FlagUsage(c)
+	flag.Var(confi.FileReader(c), "f", "read config from TOML files")
+	flag.Var(confi.Assigner(c), "c", "set config keys (path.to.key=value)")
 	flag.Parse()
 
 Longer example:
@@ -68,22 +68,22 @@ Longer example:
 		c.Size.Height = 480
 		c.Audio.SampleRate = 44100
 
-		if err := config.ReadFileIfExists("defaults.toml", c); err != nil {
+		if err := confi.ReadFileIfExists("defaults.toml", c); err != nil {
 			log.Print(err)
 		}
 
-		if x, _ := config.Get(c, "audio.samplerate"); x.(int) <= 0 {
-			config.MustSet(c, "audio.enabled", false)
+		if x, _ := confi.Get(c, "audio.samplerate"); x.(int) <= 0 {
+			confi.MustSet(c, "audio.enabled", false)
 		}
 
 		dump := flag.Bool("dump", false, "create defaults.toml")
-		flag.Var(config.FileReader(c), "f", "read config from TOML files")
-		flag.Var(config.Assigner(c), "c", "set config keys (path.to.key=value)")
-		flag.Usage = config.FlagUsage(c)
+		flag.Var(confi.FileReader(c), "f", "read config from TOML files")
+		flag.Var(confi.Assigner(c), "c", "set config keys (path.to.key=value)")
+		flag.Usage = confi.FlagUsage(c)
 		flag.Parse()
 
 		if *dump {
-			if err := config.WriteFile("defaults.toml", c); err != nil {
+			if err := confi.WriteFile("defaults.toml", c); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -114,4 +114,4 @@ Example usage output:
 	  audio.samplerate int
 
 */
-package config
+package confi

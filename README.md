@@ -1,1 +1,1 @@
-See https://godoc.org/github.com/tsavola/config for documentation.
+See https://godoc.org/github.com/tsavola/confi for documentation.
