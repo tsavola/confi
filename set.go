@@ -220,7 +220,7 @@ func Get(config interface{}, path string) (value interface{}, err error) {
 func lookup(config interface{}, path string) (node reflect.Value) {
 	node = reflect.ValueOf(config)
 
-	for _, nodeName := range strings.Split(path, ".") {
+	for _, nodeName := range splitPath(path) {
 		if node.Kind() == reflect.Interface {
 			node = node.Elem()
 		}
@@ -247,6 +247,30 @@ func lookup(config interface{}, path string) (node reflect.Value) {
 
 		if !ok {
 			panic(fmt.Errorf("unknown config key: %q", path))
+		}
+	}
+
+	return
+}
+
+func splitPath(path string) (clean []string) {
+	crude := strings.Split(path, ".")
+
+	var combine string
+
+	for _, s := range crude {
+		if combine == "" {
+			if strings.HasPrefix(s, `"`) {
+				combine = s
+			} else {
+				clean = append(clean, s)
+			}
+		} else {
+			combine += "." + s
+			if strings.HasSuffix(s, `"`) {
+				clean = append(clean, combine[1:len(combine)-1])
+				combine = ""
+			}
 		}
 	}
 

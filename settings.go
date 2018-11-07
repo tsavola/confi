@@ -53,6 +53,10 @@ func enumerateMap(list []Setting, prefix string, node reflect.Value) []Setting {
 	for _, key := range reflectMapKeyStrings(node) {
 		value := node.MapIndex(reflect.ValueOf(key))
 
+		if strings.Contains(key, ".") {
+			key = fmt.Sprintf("%q", key)
+		}
+
 		path := prefix + "." + key
 
 		if value.Kind() == reflect.Interface {
