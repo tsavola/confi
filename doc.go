@@ -5,7 +5,7 @@
 /*
 
 Package config is an ergonomic configuration parsing toolkit.  The schema is
-declared using a struct type, and values can be read from YAML files or set via
+declared using a struct type, and values can be read from TOML files or set via
 command-line flags.
 
 A pointer to a preallocated configuration object of a user-defined struct type
@@ -14,7 +14,10 @@ nested structs (either embedded or through an initialized pointer).  Only
 exported fields can be used.  The object can be initialized with default
 values.
 
-The field names are spelled in lower case in YAML files and on the
+Dynamically created subtrees are supported via map[string]interface{} nodes.
+The map values must be pointers to structs.
+
+The field names are spelled in lower case in TOML files and on the
 command-line.  The accessor functions and flag values use dotted paths to
 identify the field, such as "audio.samplerate".
 
@@ -29,7 +32,7 @@ Short example:
 	c := &myConfig{}
 
 	flag.Usage = config.FlagUsage(c)
-	flag.Var(config.FileReader(c), "f", "read config from YAML files")
+	flag.Var(config.FileReader(c), "f", "read config from TOML files")
 	flag.Var(config.Assigner(c), "c", "set config keys (path.to.key=value)")
 	flag.Parse()
 
@@ -65,7 +68,7 @@ Longer example:
 		c.Size.Height = 480
 		c.Audio.SampleRate = 44100
 
-		if err := config.ReadFileIfExists("defaults.yaml", c); err != nil {
+		if err := config.ReadFileIfExists("defaults.toml", c); err != nil {
 			log.Print(err)
 		}
 
@@ -73,14 +76,14 @@ Longer example:
 			config.MustSet(c, "audio.enabled", false)
 		}
 
-		dump := flag.Bool("dump", false, "create defaults.yaml")
-		flag.Var(config.FileReader(c), "f", "read config from YAML files")
+		dump := flag.Bool("dump", false, "create defaults.toml")
+		flag.Var(config.FileReader(c), "f", "read config from TOML files")
 		flag.Var(config.Assigner(c), "c", "set config keys (path.to.key=value)")
 		flag.Usage = config.FlagUsage(c)
 		flag.Parse()
 
 		if *dump {
-			if err := config.WriteFile("defaults.yaml", c); err != nil {
+			if err := config.WriteFile("defaults.toml", c); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -99,9 +102,9 @@ Example usage output:
 	  -c value
 	    	set config keys (path.to.key=value)
 	  -dump
-	    	create defaults.yaml
+	    	create defaults.toml
 	  -f value
-	    	read config from YAML files
+	    	read config from TOML files
 
 	Configuration settings:
 	  comment string
