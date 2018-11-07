@@ -153,13 +153,19 @@ func PrintSettings(w io.Writer, config interface{}) {
 
 // FlagUsage creates a function which may be used as flag.Usage.  It includes
 // the default usage and the configuration settings.
-func FlagUsage(config interface{}) func() {
+func FlagUsage(flags *flag.FlagSet, config interface{}) func() {
 	stdUsage := flag.Usage
+	output := flag.CommandLine.Output()
+
+	if flags != nil {
+		stdUsage = flags.Usage
+		output = flags.Output()
+	}
 
 	return func() {
 		stdUsage()
-		fmt.Fprintf(flag.CommandLine.Output(), "\nConfiguration settings:\n")
-		PrintSettings(nil, config)
+		fmt.Fprintf(output, "\nConfiguration settings:\n")
+		PrintSettings(output, config)
 	}
 }
 
