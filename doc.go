@@ -15,7 +15,7 @@ exported fields can be used.  The object can be initialized with default
 values.
 
 Dynamically created subtrees are supported via map[string]interface{} nodes.
-The map values must be pointers to structs.
+The map values must be struct pointers.
 
 The field names are spelled in lower case in TOML files and on the
 command-line.  The accessor functions and flag values use dotted paths to
@@ -45,7 +45,7 @@ Longer example:
 		"fmt"
 		"log"
 
-		"github.com/tsavola/config"
+		"github.com/tsavola/confi"
 	)
 
 	type myConfig struct {
