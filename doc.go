@@ -31,7 +31,7 @@ Short example:
 
 	c := &myConfig{}
 
-	flag.Usage = confi.FlagUsage(c)
+	flag.Usage = confi.FlagUsage(nil, c)
 	flag.Var(confi.FileReader(c), "f", "read config from TOML files")
 	flag.Var(confi.Assigner(c), "c", "set config keys (path.to.key=value)")
 	flag.Parse()
@@ -79,7 +79,7 @@ Longer example:
 		dump := flag.Bool("dump", false, "create defaults.toml")
 		flag.Var(confi.FileReader(c), "f", "read config from TOML files")
 		flag.Var(confi.Assigner(c), "c", "set config keys (path.to.key=value)")
-		flag.Usage = confi.FlagUsage(c)
+		flag.Usage = confi.FlagUsage(nil, c)
 		flag.Parse()
 
 		if *dump {
