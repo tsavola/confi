@@ -12,9 +12,7 @@ import (
 )
 
 func TestSettings(t *testing.T) {
-	c := new(testConfig)
-	c.Bar = 12345
-	c.Baz.Embed2.TestConfigEmbed = new(TestConfigEmbed)
+	c := newTestConfig()
 
 	if ss := Settings(c); !reflect.DeepEqual(ss, []Setting{
 		{"foo.key1", reflect.TypeOf(false), ""},
@@ -32,13 +30,15 @@ func TestSettings(t *testing.T) {
 		{"foo.key9", reflect.TypeOf(0.0), ""},
 		{"foo.key10", reflect.TypeOf(""), ""},
 		{"foo.key11", reflect.TypeOf([]string{}), ""},
-		{"bar", reflect.TypeOf(0), "12345"},
+		{"bar", reflect.TypeOf(0), "67890"},
 		{"baz.quux.key_a", reflect.TypeOf(""), ""},
 		{"baz.quux.key_b", reflect.TypeOf(false), ""},
 		{"baz.interval", reflect.TypeOf(time.Duration(0)), ""},
 		{"baz.embedded", reflect.TypeOf(false), ""},
 		{"baz.embed1.embedded", reflect.TypeOf(false), ""},
 		{"baz.embed2.embedded", reflect.TypeOf(false), ""},
+		{"ext.a.average", reflect.TypeOf(0), ""},
+		{"ext.b.beverage", reflect.TypeOf(0), ""},
 	}) {
 		t.Errorf("%#v", ss)
 	}

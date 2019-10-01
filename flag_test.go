@@ -12,8 +12,7 @@ import (
 )
 
 func TestAssigner(t *testing.T) {
-	c := new(testConfig)
-	c.Baz.Embed2.TestConfigEmbed = new(TestConfigEmbed)
+	c := newTestConfig()
 
 	s := flag.NewFlagSet("test", flag.PanicOnError)
 	s.Var(Assigner(c), "c", "path.to.key=value")
@@ -39,6 +38,8 @@ func TestAssigner(t *testing.T) {
 			"-c", "baz.quux.key_a=true",
 			"-c", "baz.quux.key_b=yes",
 			"-c", "baz.interval=10h9m8s7ms6µs5ns",
+			"-c", "ext.a.average=123",
+			"-c", "ext.b.beverage=456",
 		}); err != nil {
 			t.Fatal(err)
 		}
