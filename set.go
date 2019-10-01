@@ -193,11 +193,8 @@ func Assign(config interface{}, expr string) (err error) {
 	return
 }
 
-// Assign a value to a field of the configuration object.  The field's path and
-// string representation are parsed from an expression of the form "path=repr".
-// Panic if the field doesn't exist or parsing fails.
-//
-// See SetFromString for parsing rules.
+// MustAssign is a panicking alternative to the Assign method.  It panics if
+// the field doesn't exist or parsing fails.
 func MustAssign(config interface{}, expr string) {
 	tokens := strings.SplitN(expr, "=", 2)
 	if len(tokens) != 2 {

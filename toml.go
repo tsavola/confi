@@ -38,7 +38,7 @@ func Read(r io.Reader, config interface{}) (err error) {
 	return
 }
 
-// Read a TOML file into the configuration.
+// ReadFile containing TOML into the configuration.
 func ReadFile(filename string, config interface{}) (err error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -49,8 +49,8 @@ func ReadFile(filename string, config interface{}) (err error) {
 	return Read(f, config)
 }
 
-// Read a TOML file into the configuration.  No error is returned if the file
-// doesn't exist.
+// ReadFileIfExists is a lenient alternative to the ReadFile method..  No error
+// is returned if the file doesn't exist.
 func ReadFileIfExists(filename string, config interface{}) (err error) {
 	err = ReadFile(filename, config)
 	if err != nil && os.IsNotExist(err) {
@@ -101,7 +101,7 @@ func Write(w io.Writer, config interface{}) error {
 	return toml.NewEncoder(w).Encode(sanitizeContainer(make(map[string]interface{}), reflect.ValueOf(config).Elem()))
 }
 
-// Write the configuration to a TOML file.
+// WriteFile containing the configuration as TOML.
 func WriteFile(filename string, config interface{}) (err error) {
 	b := bytes.NewBuffer(nil)
 
