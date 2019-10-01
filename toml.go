@@ -6,13 +6,16 @@ package confi
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
-	"github.com/BurntSushi/toml"
+	"github.com/naoina/toml"
+	"github.com/naoina/toml/ast"
 )
 
 // Read TOML into the configuration.
@@ -22,7 +25,17 @@ func Read(r io.Reader, config interface{}) (err error) {
 		return
 	}
 
-	return toml.Unmarshal(data, config)
+	table, err := toml.Parse(data)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		err = asError(recover())
+	}()
+
+	setFields(config, "", table.Fields)
+	return
 }
 
 // Read a TOML file into the configuration.
@@ -44,6 +57,43 @@ func ReadFileIfExists(filename string, config interface{}) (err error) {
 		err = nil
 	}
 	return
+}
+
+func setFields(config interface{}, path string, fields map[string]interface{}) {
+	for k, v := range fields {
+		p := k
+		if path != "" {
+			p = path + "." + k
+		}
+
+		switch x := v.(type) {
+		case *ast.KeyValue:
+			var s string
+
+			switch y := x.Value.(type) {
+			case *ast.Array:
+				s = x.Value.Source()
+			case *ast.Boolean:
+				s = y.Value
+			case *ast.Float:
+				s = y.Value
+			case *ast.Integer:
+				s = y.Value
+			case *ast.String:
+				s = y.Value
+			default:
+				panic(fmt.Errorf("%s: type not supported: %#v", p, x.Value))
+			}
+
+			MustSetFromString(config, p, s)
+
+		case *ast.Table:
+			setFields(config, p, x.Fields)
+
+		default:
+			panic(fmt.Errorf("%s: unknown value type: %#v", p, v))
+		}
+	}
 }
 
 // Write the configuration as TOML.
@@ -111,8 +161,14 @@ func sanitizeStruct(sane map[string]interface{}, node reflect.Value) map[string]
 
 func sanitizeValue(sane map[string]interface{}, value reflect.Value, anonymous bool) (x interface{}) {
 	switch value.Kind() {
-	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64, reflect.String:
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64, reflect.String:
 		x = value.Interface()
+
+	case reflect.Int64:
+		x = value.Interface()
+		if d, ok := x.(time.Duration); ok {
+			x = d.String()
+		}
 
 	case reflect.Slice:
 		switch value.Type().Elem().Kind() {
