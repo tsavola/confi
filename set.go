@@ -82,7 +82,7 @@ func MustSetFromString(config interface{}, path string, repr string) {
 		if node.Type() == durationType {
 			d, err := time.ParseDuration(repr)
 			if err != nil {
-				panic(err)
+				panic(fmt.Errorf("%s: %v", path, err))
 			}
 			node.SetInt(int64(d))
 		} else {
