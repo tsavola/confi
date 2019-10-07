@@ -7,7 +7,6 @@ package confi
 import (
 	"errors"
 	"flag"
-	"log"
 )
 
 // FileReader makes a ``dynamic value'' which reads files into the
@@ -52,7 +51,6 @@ type Buffer struct {
 }
 
 func NewBuffer(optionalDefaultFilename string) *Buffer {
-	log.Printf("NewBuffer(%q)", optionalDefaultFilename)
 	b := new(Buffer)
 	if optionalDefaultFilename != "" {
 		b.list = append(b.list, buffered{
@@ -82,7 +80,6 @@ func (b *Buffer) Assigner() flag.Value {
 
 // Apply files and assignments to the configuration.
 func (b Buffer) Apply(config interface{}) error {
-	log.Print(b)
 	for _, entry := range b.list {
 		if err := entry.apply(config); err != nil {
 			return err
