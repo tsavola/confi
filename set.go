@@ -243,7 +243,7 @@ func lookup(config interface{}, path string) (node reflect.Value) {
 		}
 
 		if !ok {
-			panic(fmt.Errorf("unknown config key: %q", path))
+			panic(unknownKeyError(fmt.Sprintf("unknown config key: %q", path)))
 		}
 	}
 
@@ -283,3 +283,8 @@ func asError(x interface{}) (err error) {
 	}
 	return
 }
+
+type unknownKeyError string
+
+func (x unknownKeyError) Error() string  { return string(x) }
+func (x unknownKeyError) String() string { return string(x) }

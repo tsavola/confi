@@ -9,36 +9,56 @@ import (
 	"flag"
 )
 
-// FileReader makes a ``dynamic value'' which reads files into the
-// configuration as it receives filenames.
+// FileReader is equivalent to FlagReader(config, false).
 func FileReader(config interface{}) flag.Value {
-	return fileReader{config}
+	return FlagReader(config, false)
+}
+
+// FlagReader makes a ``dynamic value'' which reads files into the
+// configuration as it receives filenames.  Unknown keys are silently skipped
+// if skipUnknown is true.
+func FlagReader(config interface{}, skipUnknown bool) flag.Value {
+	return fileReader{config, skipUnknown}
 }
 
 type fileReader struct {
-	config interface{}
+	config      interface{}
+	skipUnknown bool
 }
 
 func (fr fileReader) Set(filename string) error {
-	return ReadFile(filename, fr.config)
+	return readFile(filename, fr.config, fr.skipUnknown)
 }
 
 func (fileReader) String() string {
 	return ""
 }
 
-// Assigner makes a ``dynamic value'' which sets fields in the configuration as
-// it receives assignment expressions.
+// Assigner is equivalent to FlagSetter(config, false).
 func Assigner(config interface{}) flag.Value {
-	return assigner{config}
+	return FlagSetter(config, false)
+}
+
+// FlagSetter makes a ``dynamic value'' which sets fields in the configuration
+// as it receives assignment expressions.  An error is not returned for unknown
+// keys if ignoreUnknown is true.
+func FlagSetter(config interface{}, ignoreUnknown bool) flag.Value {
+	return assigner{config, ignoreUnknown}
 }
 
 type assigner struct {
-	config interface{}
+	config        interface{}
+	ignoreUnknown bool
 }
 
-func (a assigner) Set(expr string) error {
-	return Assign(a.config, expr)
+func (a assigner) Set(expr string) (err error) {
+	err = Assign(a.config, expr)
+	if err != nil && a.ignoreUnknown {
+		if _, ok := err.(unknownKeyError); ok {
+			err = nil
+		}
+	}
+	return
 }
 
 func (assigner) String() string {

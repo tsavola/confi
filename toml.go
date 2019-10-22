@@ -19,7 +19,11 @@ import (
 )
 
 // Read TOML into the configuration.
-func Read(r io.Reader, config interface{}) (err error) {
+func Read(r io.Reader, config interface{}) error {
+	return read(r, config, false)
+}
+
+func read(r io.Reader, config interface{}, skipUnknown bool) (err error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return
@@ -34,19 +38,23 @@ func Read(r io.Reader, config interface{}) (err error) {
 		err = asError(recover())
 	}()
 
-	setFields(config, "", table.Fields)
+	setFields(config, "", table.Fields, skipUnknown)
 	return
 }
 
 // ReadFile containing TOML into the configuration.
-func ReadFile(filename string, config interface{}) (err error) {
+func ReadFile(filename string, config interface{}) error {
+	return readFile(filename, config, false)
+}
+
+func readFile(filename string, config interface{}, skipUnknown bool) (err error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return
 	}
 	defer f.Close()
 
-	return Read(f, config)
+	return read(f, config, skipUnknown)
 }
 
 // ReadFileIfExists is a lenient alternative to the ReadFile method..  No error
@@ -59,7 +67,7 @@ func ReadFileIfExists(filename string, config interface{}) (err error) {
 	return
 }
 
-func setFields(config interface{}, path string, fields map[string]interface{}) {
+func setFields(config interface{}, path string, fields map[string]interface{}, skipUnknown bool) {
 	for k, v := range fields {
 		p := k
 		if path != "" {
@@ -85,10 +93,23 @@ func setFields(config interface{}, path string, fields map[string]interface{}) {
 				panic(fmt.Errorf("%s: type not supported: %#v", p, x.Value))
 			}
 
-			MustSetFromString(config, p, s)
+			if skipUnknown {
+				func() {
+					defer func() {
+						if x := recover(); x != nil {
+							if _, ok := x.(unknownKeyError); !ok {
+								panic(x)
+							}
+						}
+					}()
+					MustSetFromString(config, p, s)
+				}()
+			} else {
+				MustSetFromString(config, p, s)
+			}
 
 		case *ast.Table:
-			setFields(config, p, x.Fields)
+			setFields(config, p, x.Fields, skipUnknown)
 
 		default:
 			panic(fmt.Errorf("%s: unknown value type: %#v", p, v))
