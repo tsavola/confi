@@ -184,9 +184,18 @@ func setSliceFromString(node reflect.Value, repr string) {
 // string representation are parsed from an expression of the form "path=repr".
 //
 // See SetFromString for parsing rules.
-func Assign(config interface{}, expr string) (err error) {
+func Assign(config interface{}, expr string) error {
+	return assign(config, expr, false)
+}
+
+func assign(config interface{}, expr string, ignoreUnknown bool) (err error) {
 	defer func() {
 		err = asError(recover())
+		if err != nil && ignoreUnknown {
+			if _, ok := err.(unknownKeyError); ok {
+				err = nil
+			}
+		}
 	}()
 
 	MustAssign(config, expr)

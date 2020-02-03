@@ -23,7 +23,7 @@ func Read(r io.Reader, config interface{}) error {
 	return read(r, config, false)
 }
 
-func read(r io.Reader, config interface{}, skipUnknown bool) (err error) {
+func read(r io.Reader, config interface{}, ignoreUnknown bool) (err error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return
@@ -38,7 +38,7 @@ func read(r io.Reader, config interface{}, skipUnknown bool) (err error) {
 		err = asError(recover())
 	}()
 
-	setFields(config, "", table.Fields, skipUnknown)
+	setFields(config, "", table.Fields, ignoreUnknown)
 	return
 }
 
@@ -47,27 +47,31 @@ func ReadFile(filename string, config interface{}) error {
 	return readFile(filename, config, false)
 }
 
-func readFile(filename string, config interface{}, skipUnknown bool) (err error) {
+func readFile(filename string, config interface{}, ignoreUnknown bool) (err error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return
 	}
 	defer f.Close()
 
-	return read(f, config, skipUnknown)
+	return read(f, config, ignoreUnknown)
 }
 
 // ReadFileIfExists is a lenient alternative to the ReadFile method..  No error
 // is returned if the file doesn't exist.
-func ReadFileIfExists(filename string, config interface{}) (err error) {
-	err = ReadFile(filename, config)
+func ReadFileIfExists(filename string, config interface{}) error {
+	return readFileIfExists(filename, config, false)
+}
+
+func readFileIfExists(filename string, config interface{}, ignoreUnknown bool) (err error) {
+	err = readFile(filename, config, ignoreUnknown)
 	if err != nil && os.IsNotExist(err) {
 		err = nil
 	}
 	return
 }
 
-func setFields(config interface{}, path string, fields map[string]interface{}, skipUnknown bool) {
+func setFields(config interface{}, path string, fields map[string]interface{}, ignoreUnknown bool) {
 	for k, v := range fields {
 		p := k
 		if path != "" {
@@ -93,7 +97,7 @@ func setFields(config interface{}, path string, fields map[string]interface{}, s
 				panic(fmt.Errorf("%s: type not supported: %#v", p, x.Value))
 			}
 
-			if skipUnknown {
+			if ignoreUnknown {
 				func() {
 					defer func() {
 						if x := recover(); x != nil {
@@ -109,7 +113,7 @@ func setFields(config interface{}, path string, fields map[string]interface{}, s
 			}
 
 		case *ast.Table:
-			setFields(config, p, x.Fields, skipUnknown)
+			setFields(config, p, x.Fields, ignoreUnknown)
 
 		default:
 			panic(fmt.Errorf("%s: unknown value type: %#v", p, v))

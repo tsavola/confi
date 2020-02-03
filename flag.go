@@ -7,6 +7,9 @@ package confi
 import (
 	"errors"
 	"flag"
+	"path"
+	"path/filepath"
+	"sort"
 )
 
 // FileReader is equivalent to FlagReader(config, false).
@@ -16,18 +19,18 @@ func FileReader(config interface{}) flag.Value {
 
 // FlagReader makes a ``dynamic value'' which reads files into the
 // configuration as it receives filenames.  Unknown keys are silently skipped
-// if skipUnknown is true.
-func FlagReader(config interface{}, skipUnknown bool) flag.Value {
-	return fileReader{config, skipUnknown}
+// if ignoreUnknown is true.
+func FlagReader(config interface{}, ignoreUnknown bool) flag.Value {
+	return fileReader{config, ignoreUnknown}
 }
 
 type fileReader struct {
-	config      interface{}
-	skipUnknown bool
+	config        interface{}
+	ignoreUnknown bool
 }
 
 func (fr fileReader) Set(filename string) error {
-	return readFile(filename, fr.config, fr.skipUnknown)
+	return readFile(filename, fr.config, fr.ignoreUnknown)
 }
 
 func (fileReader) String() string {
@@ -51,14 +54,8 @@ type assigner struct {
 	ignoreUnknown bool
 }
 
-func (a assigner) Set(expr string) (err error) {
-	err = Assign(a.config, expr)
-	if err != nil && a.ignoreUnknown {
-		if _, ok := err.(unknownKeyError); ok {
-			err = nil
-		}
-	}
-	return
+func (a assigner) Set(expr string) error {
+	return assign(a.config, expr, a.ignoreUnknown)
 }
 
 func (assigner) String() string {
@@ -70,13 +67,15 @@ type Buffer struct {
 	list []buffered
 }
 
-func NewBuffer(optionalDefaultFilename string) *Buffer {
+// NewBuffer with optional default absolute configuration filenames or glob patterns.
+func NewBuffer(defaults ...string) *Buffer {
 	b := new(Buffer)
-	if optionalDefaultFilename != "" {
-		b.list = append(b.list, buffered{
-			filename: optionalDefaultFilename,
-			optional: true,
-		})
+	for _, pattern := range defaults {
+		if pattern != "" {
+			b.list = append(b.list, buffered{
+				pattern: pattern,
+			})
+		}
 	}
 	return b
 }
@@ -92,16 +91,31 @@ func (b *Buffer) FileReader() flag.Value {
 	return bufferedFileReader{b, false}
 }
 
+// DirReader makes a ``dynamic value'' which buffers directories to read files
+// from.
+func (b *Buffer) DirReader(pattern string) flag.Value {
+	if pattern == "" {
+		panic("a glob pattern must be specified")
+	}
+	return bufferedDirReader{b, pattern}
+}
+
 // Assigner makes a ``dynamic value'' which buffers assignment expressions to
 // be applied.
 func (b *Buffer) Assigner() flag.Value {
 	return bufferedAssigner{b}
 }
 
-// Apply files and assignments to the configuration.
+// Apply is equivalent to Flush(config, false).
 func (b Buffer) Apply(config interface{}) error {
+	return b.Flush(config, false)
+}
+
+// Flush files and assignments to the configuration.  Unknown keys are silently
+// skipped if ignoreUnknown is true.
+func (b Buffer) Flush(config interface{}, ignoreUnknown bool) error {
 	for _, entry := range b.list {
-		if err := entry.apply(config); err != nil {
+		if err := entry.flush(config, ignoreUnknown); err != nil {
 			return err
 		}
 	}
@@ -110,24 +124,34 @@ func (b Buffer) Apply(config interface{}) error {
 
 type buffered struct {
 	filename string
+	pattern  string
 	expr     string
-	optional bool
 }
 
-func (b buffered) apply(config interface{}) error {
+func (b buffered) flush(config interface{}, ignoreUnknown bool) error {
 	switch {
 	case b.filename != "":
-		if b.optional {
-			return ReadFileIfExists(b.filename, config)
-		} else {
-			return ReadFile(b.filename, config)
+		return readFile(b.filename, config, ignoreUnknown)
+
+	case b.pattern != "":
+		names, err := filepath.Glob(b.pattern)
+		if err != nil {
+			return err
 		}
+		sort.Strings(names)
+		for _, name := range names {
+			if err := readFileIfExists(name, config, ignoreUnknown); err != nil {
+				return err
+			}
+		}
+		return nil
 
 	case b.expr != "":
-		return Assign(config, b.expr)
-	}
+		return assign(config, b.expr, ignoreUnknown)
 
-	panic(b)
+	default:
+		panic(b)
+	}
 }
 
 type bufferedFileReader struct {
@@ -147,6 +171,23 @@ func (fr bufferedFileReader) Set(filename string) error {
 }
 
 func (bufferedFileReader) String() string {
+	return ""
+}
+
+type bufferedDirReader struct {
+	b       *Buffer
+	pattern string
+}
+
+func (dr bufferedDirReader) Set(dirname string) error {
+	if dirname == "" {
+		return errors.New("configuration directory name is empty")
+	}
+	dr.b.list = append(dr.b.list, buffered{pattern: path.Join(dirname, dr.pattern)})
+	return nil
+}
+
+func (bufferedDirReader) String() string {
 	return ""
 }
 
