@@ -115,9 +115,20 @@ func setFields(config interface{}, path string, fields map[string]interface{}, i
 		case *ast.Table:
 			setFields(config, p, x.Fields, ignoreUnknown)
 
+		case []*ast.Table:
+			appendTables(config, p, x, ignoreUnknown)
+
 		default:
 			panic(fmt.Errorf("%s: unknown value type: %#v", p, v))
 		}
+	}
+}
+
+func appendTables(config interface{}, path string, tables []*ast.Table, ignoreUnknown bool) {
+	node := lookup(config, path)
+	n := node.Len()
+	for i, x := range tables {
+		setFields(config, fmt.Sprintf("%s.%d", path, n+i), x.Fields, ignoreUnknown)
 	}
 }
 

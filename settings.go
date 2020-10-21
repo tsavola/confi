@@ -42,6 +42,9 @@ func enumerateContainer(list []Setting, prefix string, node reflect.Value) []Set
 	case reflect.Map:
 		list = enumerateMap(list, prefix, node)
 
+	case reflect.Slice:
+		list = enumerateSlice(list, prefix, node)
+
 	case reflect.Struct:
 		list = enumerateStruct(list, prefix, node)
 	}
@@ -71,6 +74,10 @@ func enumerateMap(list []Setting, prefix string, node reflect.Value) []Setting {
 	}
 
 	return list
+}
+
+func enumerateSlice(list []Setting, prefix string, node reflect.Value) []Setting {
+	return enumerateStruct(list, prefix+".#", reflect.Zero(node.Type().Elem()))
 }
 
 func enumerateStruct(list []Setting, prefix string, node reflect.Value) []Setting {
@@ -123,6 +130,9 @@ func enumerateMember(list []Setting, path string, value reflect.Value) []Setting
 				s.Default = repr
 			}
 			list = append(list, s)
+
+		case reflect.Struct:
+			list = enumerateSlice(list, path, value)
 		}
 
 	case reflect.Map:

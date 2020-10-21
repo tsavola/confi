@@ -14,6 +14,9 @@ nested structs (either embedded or through an initialized pointer).  Only
 exported fields can be used.  The object can be initialized with default
 values.
 
+Slices of structs can be populated by appending TOML table arrays, or by
+indexing on the command line.
+
 Dynamically created subtrees are supported via map[string]interface{} nodes.
 The map values must be struct pointers.
 

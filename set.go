@@ -241,6 +241,20 @@ func lookup(config interface{}, path string) (node reflect.Value) {
 			node = node.MapIndex(reflect.ValueOf(nodeName))
 			ok = node != reflect.Value{}
 
+		case reflect.Slice:
+			if i, err := strconv.Atoi(nodeName); err == nil {
+				switch n := i + 1; {
+				case node.IsNil():
+					node.Set(reflect.MakeSlice(node.Type(), n, n))
+				case n > node.Len():
+					slice := reflect.MakeSlice(node.Type(), n, n)
+					reflect.Copy(slice, node)
+					node.Set(slice)
+				}
+				node = node.Index(i)
+				ok = true
+			}
+
 		case reflect.Struct:
 			field, found := node.Type().FieldByNameFunc(func(fieldName string) bool {
 				return strings.ToLower(fieldName) == nodeName
