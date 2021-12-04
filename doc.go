@@ -48,7 +48,7 @@ Longer example:
 		"fmt"
 		"log"
 
-		"github.com/tsavola/confi"
+		"import.name/confi"
 	)
 
 	type myConfig struct {

@@ -1,1 +1,1 @@
-See https://godoc.org/github.com/tsavola/confi for documentation.
+See the [Go package](https://pkg.go.dev/import.name/confi) documentation.

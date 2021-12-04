@@ -1,4 +1,4 @@
-module github.com/tsavola/confi
+module import.name/confi
 
 go 1.13
 
